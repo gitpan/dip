@@ -1,0 +1,64 @@
+{
+   "abstract" : "Dynamic instrumentation like DTrace, using aspects",
+   "author" : [
+      "Marcel Gruenauer <marcel@cpan.org>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 4.200004, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "dip",
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.31"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Aspect" : 0,
+            "Carp" : 0,
+            "Data::Dumper" : 0,
+            "Getopt::Long" : 0,
+            "Time::HiRes" : 0,
+            "autodie" : 0,
+            "perl" : "5.010"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "English" : 0,
+            "File::Find" : 0,
+            "File::Temp" : 0,
+            "Scalar::Util" : 0,
+            "Test::More" : "0.94"
+         }
+      }
+   },
+   "provides" : {
+      "dip" : {
+         "file" : "lib/dip.pm",
+         "version" : "1.111060"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "mailto" : "bug-dip at rt.cpan.org",
+         "web" : "http://rt.cpan.org/Public/Dist/Display.html?Name=dip"
+      },
+      "homepage" : "http://search.cpan.org/dist/dip/",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/hanekomu/dip.git",
+         "web" : "http://github.com/hanekomu/dip"
+      }
+   },
+   "version" : "1.111060"
+}
+

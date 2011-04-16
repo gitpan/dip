@@ -1,0 +1,2 @@
+before { dump_var ARGS(1) } call qr/Dancer::Handler::handle_request/
+

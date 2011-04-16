@@ -1,0 +1,136 @@
+#!/usr/bin/env perl
+# PODNAME: dip
+# ABSTRACT: Dynamic instrumentation like DTrace, using aspects
+use warnings;
+use strict;
+use Getopt::Long;
+my %opt;
+GetOptions(\%opt, qw(script|s=s@ exec|e=s@ delay|d verbose|v));
+$opt{command} //= '';
+my $spec = '';
+$spec .= "run q!$_!; " for @{ $opt{script} || [] };
+$spec .= "$_; "        for @{ $opt{exec}   || [] };
+
+# horrible hack to pass some options to dip.pm during exec()
+$spec = "-delay,$spec" if $opt{delay};
+
+my $cmd = "$^X -Mdip='$spec' @ARGV";
+print "$cmd\n" if $opt{verbose};
+exec $cmd;
+
+
+__END__
+=pod
+
+=for stopwords DTrace
+
+=for test_synopsis 1;
+__END__
+
+=head1 NAME
+
+dip - Dynamic instrumentation like DTrace, using aspects
+
+=head1 VERSION
+
+version 1.111060
+
+=head1 SYNOPSIS
+
+    $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
+    $ dip -s toolkit/count_new.dip -- -S myapp.pl
+    $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
+        call qr/URI::new$/' test.pl
+
+    # quantize transaction handling time both in total and grouped by request type
+    $ dip -e '
+        before { $ts_start = [gettimeofday] } call qr/MyApp::handle_request$/;
+        after { quantize [ "all", ARGS(1) ] => 10**6*tv_interval($ts_start) }
+            call qr/MyApp::handle_request$/;
+      ' myapp.pl
+
+=head1 COMMANDS
+
+=over 4
+
+=item -s, --script
+
+Takes a path to the dip script that should be run.
+
+=item -e, --exec
+
+Expects a dip script to be passed inline, much like C<perl -e> expects
+an inline program.
+
+=item -d, --delay
+
+Tells L<dip> not to activate the instrumentation at the beginning of
+the program. Instead the program to be instrumented should activate it
+manually using:
+
+    $dip::dip && $dip::dip->();
+
+This is useful if your program loads other code that should be
+instrumented at runtime. For example, to test a web application that
+uses Plack you might use:
+
+    use Plack::Util;
+    use Plack::Test;
+    use HTTP::Request;
+
+    test_psgi
+        app => Plack::Util::load_psgi('mywebapp.pl'),
+        client => sub {
+            my $cb = shift;
+            # now we're sure that mywebapp.pl has been loaded
+            $dip::dip && $dip::dip->();
+            # ... now make requests and test the responses ...
+        };
+
+=item -v, --verbose
+
+The command-line options given to C<dip> are used to call the program
+to be instrumented in a special way. Using the C<--verbose> option
+tells C<dip> to print that command-line.
+
+=back
+
+=head1 SEE ALSO
+
+L<dip>
+
+=head1 INSTALLATION
+
+See perlmodinstall for information and options on installing Perl modules.
+
+=head1 BUGS AND LIMITATIONS
+
+No bugs have been reported.
+
+Please report any bugs or feature requests through the web interface at
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=dip>.
+
+=head1 AVAILABILITY
+
+The latest version of this module is available from the Comprehensive Perl
+Archive Network (CPAN). Visit L<http://www.perl.com/CPAN/> to find a CPAN
+site near you, or see L<http://search.cpan.org/dist/dip/>.
+
+The development version lives at L<http://github.com/hanekomu/dip>
+and may be cloned from L<git://github.com/hanekomu/dip.git>.
+Instead of sending patches, please fork this project using the standard
+git and github infrastructure.
+
+=head1 AUTHOR
+
+Marcel Gruenauer <marcel@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Marcel Gruenauer.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+
