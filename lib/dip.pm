@@ -4,11 +4,11 @@ use warnings;
 
 package dip;
 BEGIN {
-  $dip::VERSION = '1.111060';
+  $dip::VERSION = '1.111460';
 }
 
 # ABSTRACT: Dynamic instrumentation like DTrace, using aspects
-use Aspect;
+use Aspect 1.00;
 use Data::Dumper;
 use Carp;
 use autodie;
@@ -123,11 +123,11 @@ sub rtrim {
 }
 sub rref ($) { ref $_[0] || $_[0] }
 
-# In advice, $_->{params} contains a reference to the wrapped sub's @_.
-# Use this like ARGS(2,1) === $_->{params}[2] . " " . $_->{params}[1]
+# In advice, $_->{args} contains a reference to the wrapped sub's @_.
+# Use this like ARGS(2,1) === $_->{args}[2] . " " . $_->{args}[1]
 sub ARGS {
-    return $_->{params}[$_[0]] if @_ == 1;
-    join ' ' => (@{ $_->{params} })[@_];
+    return $_->{args}[$_[0]] if @_ == 1;
+    join ' ' => (@{ $_->{args} })[@_];
 }
 ######################################################################
 # quantize                                                           #
@@ -227,7 +227,7 @@ dip - Dynamic instrumentation like DTrace, using aspects
 
 =head1 VERSION
 
-version 1.111060
+version 1.111460
 
 =head1 SYNOPSIS
 
@@ -307,7 +307,7 @@ been instantiated at least once, you could use:
 
     before { $c{total}++ } call qr/::new$/
 
-and then C<%h> will be dumped.
+and then C<%c> will be dumped.
 
 =head2 Aggregating functions
 
@@ -334,7 +334,7 @@ was a problem evaluating it.
 Normally this function will be called automatically during C<INIT>
 time, but you can delay by giving the C<--delay> option to C<dip>; you
 would use this if your program loads other code at runtime - using
-do(), for example - that needs to be instrumented as well. In that
+C<do()>, for example - that needs to be instrumented as well. In that
 case you have manually activate the instrumentation using:
 
     $dip::dip && $dip::dip->();
@@ -419,9 +419,9 @@ argument. You can use several argument indices; in this case the
 indicated function arguments will be stringified and concatenated with
 a space.
 
-C<ARGS(0)> is equivalent to C<$_->{params}[0]>; C<ARGS(1,2)> is
-equivalent to C<join ' ' => ARGS(0), ARGS(1)> - see L<Aspect> for the
-kind of context information that is passed to advice code.
+C<ARGS(0)> is equivalent to C<$_->{args}[0]>; C<ARGS(1,2)> is equivalent to
+C<join ' ' => ARGS(0), ARGS(1)> - see L<Aspect> for the kind of context
+information that is passed to advice code.
 
 =head2 quantize
 

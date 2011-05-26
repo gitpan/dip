@@ -4,7 +4,7 @@
       "Marcel Gruenauer <marcel@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.200004, CPAN::Meta::Converter version 2.110930",
+   "generated_by" : "Dist::Zilla version 4.200006, CPAN::Meta::Converter version 2.110930",
    "license" : [
       "perl_5"
    ],
@@ -16,12 +16,12 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "6.31"
+            "ExtUtils::MakeMaker" : "6.30"
          }
       },
       "runtime" : {
          "requires" : {
-            "Aspect" : 0,
+            "Aspect" : "1.00",
             "Carp" : 0,
             "Data::Dumper" : 0,
             "Getopt::Long" : 0,
@@ -43,7 +43,7 @@
    "provides" : {
       "dip" : {
          "file" : "lib/dip.pm",
-         "version" : "1.111060"
+         "version" : "1.111460"
       }
    },
    "release_status" : "stable",
@@ -59,6 +59,6 @@
          "web" : "http://github.com/hanekomu/dip"
       }
    },
-   "version" : "1.111060"
+   "version" : "1.111460"
 }
 

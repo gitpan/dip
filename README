@@ -2,7 +2,7 @@ NAME
     dip - Dynamic instrumentation like DTrace, using aspects
 
 VERSION
-    version 1.111060
+    version 1.111460
 
 SYNOPSIS
         $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
@@ -78,7 +78,7 @@ DESCRIPTION
 
         before { $c{total}++ } call qr/::new$/
 
-    and then %h will be dumped.
+    and then %c will be dumped.
 
   Aggregating functions
     "dip" provides aggregating functions that help in understanding a set of
@@ -100,7 +100,7 @@ FUNCTIONS
 
     Normally this function will be called automatically during "INIT" time,
     but you can delay by giving the "--delay" option to "dip"; you would use
-    this if your program loads other code at runtime - using do(), for
+    this if your program loads other code at runtime - using "do()", for
     example - that needs to be instrumented as well. In that case you have
     manually activate the instrumentation using:
 
@@ -177,7 +177,7 @@ FUNCTIONS
     use several argument indices; in this case the indicated function
     arguments will be stringified and concatenated with a space.
 
-    ARGS(0) is equivalent to "$_-"{params}[0]>; "ARGS(1,2)" is equivalent to
+    ARGS(0) is equivalent to "$_-"{args}[0]>; "ARGS(1,2)" is equivalent to
     "join ' ' =" ARGS(0), ARGS(1)> - see Aspect for the kind of context
     information that is passed to advice code.
 
