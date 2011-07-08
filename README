@@ -2,18 +2,18 @@ NAME
     dip - Dynamic instrumentation like DTrace, using aspects
 
 VERSION
-    version 1.111460
+    version 1.111890
 
 SYNOPSIS
         $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
         $ dip -s toolkit/count_new.dip -- -S myapp.pl
         $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
-            call qr/URI::new$/' test.pl
+            call "URI::new"' test.pl
 
         $ cat quant-requests.dip
         # quantize request handling time, separated by request URI
         before { $ts_start = [gettimeofday] }
-            call qr/Dancer::Handler::handle_request/;
+            call 'Dancer::Handler::handle_request';
         after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
             call qr/Dancer::Handler::handle_request/;
         $ dip -s request-quant.dip test.pl
@@ -131,10 +131,14 @@ FUNCTIONS
     remembering three stack frames for each place:
 
         before { count "constructor", ARGS(0), ustack(3) }
-            call qr/XML::LibXML::NodeList::new$/
+            call 'XML::LibXML::NodeList::new'
 
   cluck
     Returns what Carp's "cluck()" would return, again with "Aspect::" and
+    "dip" namespaces omitted.
+
+  longmess
+    Returns what Carp's "longmess()" would return, again with "Aspect::" and
     "dip" namespaces omitted.
 
   count
@@ -156,7 +160,7 @@ FUNCTIONS
     Example: Show all requests a Dancer web application handles:
 
         before { dump_var ARGS(1) }
-            call qr/Dancer::Handler::handle_request/
+            call 'Dancer::Handler::handle_request'
 
   rtrim
     Convenience function to right-trim a string.
@@ -177,9 +181,14 @@ FUNCTIONS
     use several argument indices; in this case the indicated function
     arguments will be stringified and concatenated with a space.
 
-    ARGS(0) is equivalent to "$_-"{args}[0]>; "ARGS(1,2)" is equivalent to
-    "join ' ' =" ARGS(0), ARGS(1)> - see Aspect for the kind of context
+    ARGS(0) is equivalent to "$_->{args}[0]"; "ARGS(1,2)" is equivalent to
+    "join ' ' => ARGS(0), ARGS(1)" - see Aspect for the kind of context
     information that is passed to advice code.
+
+    For example:
+
+        # print SQL statements as they are prepared by DBI
+        before { print ARGS(1) } call qr/DBI::.*::prepare/
 
   quantize
     This aggregator function takes a name, or an reference to a list of
@@ -187,6 +196,23 @@ FUNCTIONS
     frequency distribution of the values of the specified expressions.
     Increments the value in the highest power-of-two bucket that is less
     than the specified expression.
+
+  p
+    The <p()> function from Data::Printer is available to dip scripts.
+    Example:
+
+        # Print a stack trace every time the name is changed,
+        # except when reading from the database.
+        before { print longmess(p $_->{args}[1]) if $_->{args}[1] }
+            call "MyObj::name" & !cflow("MyObj::read")
+
+  gettimeofday
+    The "gettimeofday()" function from Time::HiRes is available to dip
+    scripts.
+
+  tv_interval
+    The "tv_interval()" function from Time::HiRes is available to dip
+    scripts.
 
 INSTALLATION
     See perlmodinstall for information and options on installing Perl

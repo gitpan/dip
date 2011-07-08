@@ -4,7 +4,7 @@ use warnings;
 
 package dip;
 BEGIN {
-  $dip::VERSION = '1.111460';
+  $dip::VERSION = '1.111890';
 }
 
 # ABSTRACT: Dynamic instrumentation like DTrace, using aspects
@@ -13,6 +13,7 @@ use Data::Dumper;
 use Carp;
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
+use DDP;  # so p() is available
 our %opt;
 $dip::dip = sub { instrument() };
 
@@ -69,6 +70,12 @@ sub cluck {
     local %Carp::CarpInternal = %Carp::CarpInternal;
     $Carp::CarpInternal{$_}++ for qw(dip Aspect::Hook);
     Carp::cluck @_;
+}
+
+sub longmess {
+    local %Carp::CarpInternal = %Carp::CarpInternal;
+    $Carp::CarpInternal{$_}++ for qw(dip Aspect::Hook);
+    Carp::longmess @_;
 }
 
 sub count ($@) {
@@ -216,7 +223,7 @@ END {
 __END__
 =pod
 
-=for stopwords DTrace rref rtrim ustack
+=for stopwords DTrace rref rtrim ustack longmess
 
 =for test_synopsis 1;
 __END__
@@ -227,19 +234,19 @@ dip - Dynamic instrumentation like DTrace, using aspects
 
 =head1 VERSION
 
-version 1.111460
+version 1.111890
 
 =head1 SYNOPSIS
 
     $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
     $ dip -s toolkit/count_new.dip -- -S myapp.pl
     $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
-        call qr/URI::new$/' test.pl
+        call "URI::new"' test.pl
 
     $ cat quant-requests.dip
     # quantize request handling time, separated by request URI
     before { $ts_start = [gettimeofday] }
-        call qr/Dancer::Handler::handle_request/;
+        call 'Dancer::Handler::handle_request';
     after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
         call qr/Dancer::Handler::handle_request/;
     $ dip -s request-quant.dip test.pl
@@ -366,12 +373,17 @@ created, and keep a separate counter for each place it is created
 from, remembering three stack frames for each place:
 
     before { count "constructor", ARGS(0), ustack(3) }
-        call qr/XML::LibXML::NodeList::new$/
+        call 'XML::LibXML::NodeList::new'
 
 =head2 cluck
 
 Returns what L<Carp>'s C<cluck()> would return, again with C<Aspect::>
 and C<dip> namespaces omitted.
+
+=head2 longmess
+
+Returns what L<Carp>'s C<longmess()> would return, again with
+C<Aspect::> and C<dip> namespaces omitted.
 
 =head2 count
 
@@ -394,7 +406,7 @@ Convenience method to dump a variable like L<Data::Dumper> does.
 Example: Show all requests a L<Dancer> web application handles:
 
     before { dump_var ARGS(1) }
-        call qr/Dancer::Handler::handle_request/
+        call 'Dancer::Handler::handle_request'
 
 =head2 rtrim
 
@@ -419,9 +431,14 @@ argument. You can use several argument indices; in this case the
 indicated function arguments will be stringified and concatenated with
 a space.
 
-C<ARGS(0)> is equivalent to C<$_->{args}[0]>; C<ARGS(1,2)> is equivalent to
-C<join ' ' => ARGS(0), ARGS(1)> - see L<Aspect> for the kind of context
-information that is passed to advice code.
+C<ARGS(0)> is equivalent to C<< $_->{args}[0] >>; C<ARGS(1,2)> is
+equivalent to C<< join ' ' => ARGS(0), ARGS(1) >> - see L<Aspect> for
+the kind of context information that is passed to advice code.
+
+For example:
+
+    # print SQL statements as they are prepared by DBI
+    before { print ARGS(1) } call qr/DBI::.*::prepare/
 
 =head2 quantize
 
@@ -430,6 +447,26 @@ names, and a value. For each name, it keeps track of a power-of-two
 frequency distribution of the values of the specified expressions.
 Increments the value in the highest power-of-two bucket that is less
 than the specified expression.
+
+=head2 p
+
+The <p()> function from L<Data::Printer> is available to dip scripts.
+Example:
+
+    # Print a stack trace every time the name is changed,
+    # except when reading from the database.
+    before { print longmess(p $_->{args}[1]) if $_->{args}[1] }
+        call "MyObj::name" & !cflow("MyObj::read")
+
+=head2 gettimeofday
+
+The C<gettimeofday()> function from L<Time::HiRes> is available to dip
+scripts.
+
+=head2 tv_interval
+
+The C<tv_interval()> function from L<Time::HiRes> is available to dip
+scripts.
 
 =head1 INSTALLATION
 

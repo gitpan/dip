@@ -1,5 +1,9 @@
 Revision history for dip
 
+1.111890  2011-07-08 10:44:48 Europe/Vienna
+    - expose Carp's longmess() and Data::Printer's p() to dip scripts
+    - improved documentation
+
 1.111460  2011-05-26 16:02:15 Europe/Vienna
     - update for Aspect 1.00
 

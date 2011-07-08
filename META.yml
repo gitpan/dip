@@ -11,7 +11,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: 6.30
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.200006, CPAN::Meta::Converter version 2.110930'
+generated_by: 'Dist::Zilla version 4.200008, CPAN::Meta::Converter version 2.110930'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -20,10 +20,11 @@ name: dip
 provides:
   dip:
     file: lib/dip.pm
-    version: 1.111460
+    version: 1.111890
 requires:
   Aspect: 1.00
   Carp: 0
+  DDP: 0
   Data::Dumper: 0
   Getopt::Long: 0
   Time::HiRes: 0
@@ -33,4 +34,4 @@ resources:
   bugtracker: http://rt.cpan.org/Public/Dist/Display.html?Name=dip
   homepage: http://search.cpan.org/dist/dip/
   repository: git://github.com/hanekomu/dip.git
-version: 1.111460
+version: 1.111890

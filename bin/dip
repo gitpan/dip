@@ -33,7 +33,7 @@ dip - Dynamic instrumentation like DTrace, using aspects
 
 =head1 VERSION
 
-version 1.111460
+version 1.111890
 
 =head1 SYNOPSIS
 
