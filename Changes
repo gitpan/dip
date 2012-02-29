@@ -1,5 +1,8 @@
 Revision history for dip
 
+1.14 2012-02-29 20:10:39 Europe/Vienna
+    - also document that Term::ANSIColor constants are available
+
 1.13 2012-02-29 11:04:24 Europe/Vienna
     - dip scripts are now prepended with "use strict; use warnings; use 5.10.0"
     - fix typo in bin/dip synopsis (thanks berekuk)

@@ -10,14 +10,14 @@ use File::Slurp qw(read_file);
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
 use Term::ANSIColor qw(:constants);
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 our %opt;
 $dip::dip = sub { _instrument(); undef $dip::dip; };
 
 sub import {
     shift;
 
-    # perl -Mdip='before { counter("constructor", $_->{sub_name}) }
+    # perl -Mdip='before { count("constructor", $_->{sub_name}) }
     # splits on ',' even inside a quoted string... :/
     while ($_[0] =~ /^-(\w+)$/) {
         $opt{$1}++;
@@ -239,12 +239,13 @@ dip - Dynamic instrumentation like DTrace, using aspects
     $ dip -s toolkit/count-new.dip -- -S myapp.pl
 
     # run an inline dip script
-    $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
+    $ dip -e 'our %c; before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
         call "URI::new"' test.pl
 
     # a more complex dip script
     $ cat quant-requests.dip
     # quantize request handling time, separated by request URI
+    my $ts_start;
     before { $ts_start = [gettimeofday] }
         call 'Dancer::Handler::handle_request';
     after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
@@ -311,11 +312,13 @@ activated for those locations that match the probe's condition.
 
 At the end of your program run, during C<END> time, all aggregators -
 see below - will dump their results. Also any other hashes you have
-written to in your dip scripts will be dumped.
+written to in your dip scripts will be dumped if they are declared as
+C<our> variables.
 
 For example, if you simply wanted to know which kinds of objects have
 been instantiated at least once, you could use:
 
+    our %c;
     before { $c{total}++ } call qr/::new$/
 
 and then C<%c> will be dumped.
@@ -462,6 +465,15 @@ scripts.
 
 The C<tv_interval()> function from L<Time::HiRes> is available to dip
 scripts.
+
+=head Color constants
+
+Color constants from L<Term::ANSIColor> are available to dip scripts.
+For example:
+
+    before { say RED, ARGS(1), RESET } call qr/DBI::.*::prepare/
+
+prints each DBI query in red text as it is prepared.
 
 =head2 _eval_code
 

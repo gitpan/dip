@@ -1,4 +1,5 @@
 # quantize request handling time
+my $ts_start;
 before { $ts_start = [gettimeofday] }
     call qr/Dancer::Handler::handle_request/;
 after {

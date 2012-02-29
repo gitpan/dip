@@ -1,1 +1,2 @@
+our %c;
 before { count("constructor", rref ARGS(0)); $c{total}++ } call qr/::new$/
