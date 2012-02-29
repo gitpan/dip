@@ -3,8 +3,8 @@
    "author" : [
       "Marcel Gruenauer <marcel@cpan.org>"
    ],
-   "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.200008, CPAN::Meta::Converter version 2.110930",
+   "dynamic_config" : 1,
+   "generated_by" : "ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.120530",
    "license" : [
       "perl_5"
    ],
@@ -13,53 +13,36 @@
       "version" : "2"
    },
    "name" : "dip",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "0"
+         }
+      },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "6.30"
+            "ExtUtils::MakeMaker" : "6.58"
          }
       },
       "runtime" : {
          "requires" : {
-            "Aspect" : "1.00",
-            "Carp" : 0,
-            "DDP" : 0,
-            "Data::Dumper" : 0,
-            "Getopt::Long" : 0,
-            "Time::HiRes" : 0,
-            "autodie" : 0,
-            "perl" : "5.010"
+            "Aspect" : "1.02",
+            "Carp" : "0",
+            "Data::Dumper" : "0",
+            "Getopt::Long" : "0",
+            "Time::HiRes" : "0",
+            "autodie" : "0",
+            "strict" : "0",
+            "warnings" : "0"
          }
-      },
-      "test" : {
-         "requires" : {
-            "English" : 0,
-            "File::Find" : 0,
-            "File::Temp" : 0,
-            "Scalar::Util" : 0,
-            "Test::More" : "0.94"
-         }
-      }
-   },
-   "provides" : {
-      "dip" : {
-         "file" : "lib/dip.pm",
-         "version" : "1.111890"
       }
    },
    "release_status" : "stable",
-   "resources" : {
-      "bugtracker" : {
-         "mailto" : "bug-dip at rt.cpan.org",
-         "web" : "http://rt.cpan.org/Public/Dist/Display.html?Name=dip"
-      },
-      "homepage" : "http://search.cpan.org/dist/dip/",
-      "repository" : {
-         "type" : "git",
-         "url" : "git://github.com/hanekomu/dip.git",
-         "web" : "http://github.com/hanekomu/dip"
-      }
-   },
-   "version" : "1.111890"
+   "version" : "1.13"
 }
-

@@ -7,7 +7,7 @@ dip -e 'before { count("constructor", ARGS(0)); $c{total}++ } call qr/::new$/' m
 dip -e 'before { count("constructor", ARGS(0)); $c{total}++ } call qr/^(?!XML::XPath).*::new$/' \
     myapp.pl
 
-dip -s dip/count_new.dip myapp.pl
+dip -s dip/count-new.dip myapp.pl
 
 dip -e 'before { count "constructor", ARGS(0), ustack(2); $c{total}++ } call qr/XML::LibXML::NodeList::new$/' \
     myapp.pl

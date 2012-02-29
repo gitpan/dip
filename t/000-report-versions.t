@@ -420,10 +420,10 @@ BEGIN {
 
     my $Test = Test::Builder->new;
 
-    $Test->plan(skip_all => "META.yml could not be found")
-        unless -f 'META.yml' and -r _;
+    $Test->plan(skip_all => "MYMETA.yml could not be found")
+        unless -f 'MYMETA.yml' and -r _;
 
-    my $meta = (Local::YAML::Tiny->read('META.yml'))->[0];
+    my $meta = (Local::YAML::Tiny->read('MYMETA.yml'))->[0];
     my %requires;
     for my $require_key (grep { /requires/ } keys %$meta) {
         my %h = %{ $meta->{$require_key} };

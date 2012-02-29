@@ -1,5 +1,24 @@
 Revision history for dip
 
+1.13 2012-02-29 11:04:24 Europe/Vienna
+    - dip scripts are now prepended with "use strict; use warnings; use 5.10.0"
+    - fix typo in bin/dip synopsis (thanks berekuk)
+    - renamed 'dipdop' example to 'dancr'
+    - Adapted example dancer app for latest version of Dancer
+    - use Test::WWW::Mechanize::PSGI to test the whole site
+    - remove DDP dependency since DDP has many dependencies itself
+    - use Aspect 1.02 to load Aspect::Point::Functions
+    - document using modules in dip scripts
+
+1.12 2011-10-25 00:13:22 Europe/Vienna
+    - fix typo in bin/dip synopsis (thanks berekuk)
+    - more doc fixes
+
+1.112970  2011-10-24 12:39:07 Europe/Vienna
+    - converted the dist not to use Dist::Zilla anymore - I don't maintain that
+      many dists anymore, and it's easier for potential collaborators
+    - streamlined use of the coderef in $dip::dip
+
 1.111890  2011-07-08 10:44:48 Europe/Vienna
     - expose Carp's longmess() and Data::Printer's p() to dip scripts
     - improved documentation

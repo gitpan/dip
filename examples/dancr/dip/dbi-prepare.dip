@@ -1,0 +1,1 @@
+before { say RED, ARGS(1), RESET } call qr/DBI::.*::prepare/

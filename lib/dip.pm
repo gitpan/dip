@@ -1,21 +1,18 @@
-use 5.010;
+package dip;
 use strict;
 use warnings;
-
-package dip;
-BEGIN {
-  $dip::VERSION = '1.111890';
-}
-
-# ABSTRACT: Dynamic instrumentation like DTrace, using aspects
-use Aspect 1.00;
+use 5.10.0;
+use Aspect 1.02;
+use Aspect::Point::Functions;
 use Data::Dumper;
 use Carp;
+use File::Slurp qw(read_file);
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
-use DDP;  # so p() is available
+use Term::ANSIColor qw(:constants);
+our $VERSION = '1.13';
 our %opt;
-$dip::dip = sub { instrument() };
+$dip::dip = sub { _instrument(); undef $dip::dip; };
 
 sub import {
     shift;
@@ -30,24 +27,30 @@ sub import {
     die "dip: no instrumentation found\n" unless length $advice;
 }
 
-sub instrument {
-    our $did_instrument;
-    warn "warning: dip::instrument() run more than once\n" if $did_instrument++;
+sub _eval_code {
+    my $code = shift;
     ## no critic
     no strict;
-    eval our $advice;
+    eval <<EOCODE;
+use strict;
+use warnings;
+use 5.10.0;
+
+$code
+EOCODE
     die $@ if $@;
+}
+
+sub _instrument {
+    our $did_instrument;
+    warn "warning: dip::instrument() run more than once\n" if $did_instrument++;
+    _eval_code our $advice;
 }
 
 sub run {
     my $file = shift;
     $file =~ s!~/!$ENV{HOME}/!;
-
-    # Don't assign do() to a lexical otherwise
-    # the aspects will go out of scope here.
-    do $file;
-    warn "couldn't parse $file: $@" if $@;
-    warn "couldn't do $file: $!"    if $!;
+    _eval_code scalar read_file($file);
 }
 
 sub ustack {
@@ -133,7 +136,7 @@ sub rref ($) { ref $_[0] || $_[0] }
 # In advice, $_->{args} contains a reference to the wrapped sub's @_.
 # Use this like ARGS(2,1) === $_->{args}[2] . " " . $_->{args}[1]
 sub ARGS {
-    return $_->{args}[$_[0]] if @_ == 1;
+    return $_->{args}[ $_[0] ] if @_ == 1;
     join ' ' => (@{ $_->{args} })[@_];
 }
 ######################################################################
@@ -193,7 +196,7 @@ sub _dump_one_quantize ($;$$) {
     print "\n";
 }
 INIT {
-    instrument() unless $opt{delay};
+    $dip::dip->() unless $opt{delay};
 }
 
 END {
@@ -219,8 +222,6 @@ END {
 }
 1;
 
-
-__END__
 =pod
 
 =for stopwords DTrace rref rtrim ustack longmess
@@ -232,17 +233,16 @@ __END__
 
 dip - Dynamic instrumentation like DTrace, using aspects
 
-=head1 VERSION
-
-version 1.111890
-
 =head1 SYNOPSIS
 
-    $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
-    $ dip -s toolkit/count_new.dip -- -S myapp.pl
+    # run a dip script from a file; pass perl switches after the '--'
+    $ dip -s toolkit/count-new.dip -- -S myapp.pl
+
+    # run an inline dip script
     $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
         call "URI::new"' test.pl
 
+    # a more complex dip script
     $ cat quant-requests.dip
     # quantize request handling time, separated by request URI
     before { $ts_start = [gettimeofday] }
@@ -266,6 +266,10 @@ version 1.111890
             1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                70
             2048 |@@@@@@@@@@@@@@@                                    30
             4096 |                                                   0
+
+    # The next example relies on Aspect::Library::Profiler, so
+    # if something goes wrong, you need to look in the Aspect modules.
+    $ dip -e 'aspect Profiler => call qr/^Person::set_/' myapp.pl
 
 =head1 DESCRIPTION
 
@@ -333,10 +337,10 @@ Remembers the dip script given on the command-line so we can run it in
 C<instrument()>. Complains if there was no dip script. The C<--delay>
 option is passed in this way as well.
 
-=head2 instrument
+=head2 _instrument
 
-Evaluates the dip script we remembered in C<import()>. Dies if there
-was a problem evaluating it.
+Evaluates the dip script we remembered in C<import()> using
+C<_eval_code()>. Dies if there was a problem evaluating it.
 
 Normally this function will be called automatically during C<INIT>
 time, but you can delay by giving the C<--delay> option to C<dip>; you
@@ -348,8 +352,9 @@ case you have manually activate the instrumentation using:
 
 =head2 run
 
-Convenience function that takes a filename and runs the file via
-C<do()>. This is what C<dip -s> uses. For example:
+Convenience function that takes a filename and evaluates the contents
+of the file using C<_eval_code()>. This is what C<dip -s> uses. For
+example:
 
     dip -s myscript.dip myapp.pl
 
@@ -448,16 +453,6 @@ frequency distribution of the values of the specified expressions.
 Increments the value in the highest power-of-two bucket that is less
 than the specified expression.
 
-=head2 p
-
-The <p()> function from L<Data::Printer> is available to dip scripts.
-Example:
-
-    # Print a stack trace every time the name is changed,
-    # except when reading from the database.
-    before { print longmess(p $_->{args}[1]) if $_->{args}[1] }
-        call "MyObj::name" & !cflow("MyObj::read")
-
 =head2 gettimeofday
 
 The C<gettimeofday()> function from L<Time::HiRes> is available to dip
@@ -468,38 +463,54 @@ scripts.
 The C<tv_interval()> function from L<Time::HiRes> is available to dip
 scripts.
 
-=head1 INSTALLATION
+=head2 _eval_code
 
-See perlmodinstall for information and options on installing Perl modules.
+Is called for advice given on the command line and dip scripts
+evaluated by C<run()>.
 
-=head1 BUGS AND LIMITATIONS
+The following code is prepended to the code:
 
-No bugs have been reported.
+    use strict;
+    use warnings;
+    use 5.10.0;
 
-Please report any bugs or feature requests through the web interface at
-L<http://rt.cpan.org/Public/Dist/Display.html?Name=dip>.
+so that dip scripts are properly checked and C<say()> is available.
 
-=head1 AVAILABILITY
+=head1 OTHER FUNCTIONS
 
-The latest version of this module is available from the Comprehensive Perl
-Archive Network (CPAN). Visit L<http://www.perl.com/CPAN/> to find a CPAN
-site near you, or see L<http://search.cpan.org/dist/dip/>.
+dip scripts are just Perl code and as such can use any helper module.
+For example, you might use the following code at the beginning of your
+dip scripts:
 
-The development version lives at L<http://github.com/hanekomu/dip>
-and may be cloned from L<git://github.com/hanekomu/dip.git>.
-Instead of sending patches, please fork this project using the standard
-git and github infrastructure.
+    use strict;
+    use warnings;
+
+=head2 p
+
+The C<p()> function from L<Data::Printer> can be useful to dip scripts.
+
+Example:
+
+    # Print a stack trace every time the name is changed,
+    # except when reading from the database.
+    use DDP;
+    before { print longmess(p $_->{args}[1]) if $_->{args}[1] }
+        call "MyObj::name" & !cflow("MyObj::read")
 
 =head1 AUTHOR
 
-Marcel Gruenauer <marcel@cpan.org>
+The following person is the author of all the files provided in
+this distribution unless explicitly noted otherwise.
+
+Marcel Gruenauer <marcel@cpan.org>, L<http://perlservices.at>
 
 =head1 COPYRIGHT AND LICENSE
+
+The following copyright notice applies to all the files provided in
+this distribution, including binary files, unless explicitly noted
+otherwise.
 
 This software is copyright (c) 2011 by Marcel Gruenauer.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
-
-=cut
-

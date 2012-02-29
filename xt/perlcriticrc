@@ -2,6 +2,9 @@
 [TestingAndDebugging::ProhibitNoStrict]
 allow = refs
 
+[TestingAndDebugging::RequireUseStrict]
+equivalent_modules = Registry::Box::features Registry::Box::Test
+
 [-BuiltinFunctions::ProhibitStringyEval]
 [-ControlStructures::ProhibitMutatingListFunctions]
 [-Subroutines::ProhibitExplicitReturnUndef]

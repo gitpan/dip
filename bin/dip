@@ -13,13 +13,10 @@ $spec .= "$_; "        for @{ $opt{exec}   || [] };
 
 # horrible hack to pass some options to dip.pm during exec()
 $spec = "-delay,$spec" if $opt{delay};
-
 my $cmd = "$^X -Mdip='$spec' @ARGV";
 print "$cmd\n" if $opt{verbose};
 exec $cmd;
 
-
-__END__
 =pod
 
 =for stopwords DTrace
@@ -31,23 +28,53 @@ __END__
 
 dip - Dynamic instrumentation like DTrace, using aspects
 
-=head1 VERSION
-
-version 1.111890
-
 =head1 SYNOPSIS
 
-    $ dip -e 'aspect Profiled => call qr/^Person::set_/' myapp.pl
+    # run a dip script from a file; pass perl switches after the '--'
     $ dip -s toolkit/count_new.dip -- -S myapp.pl
-    $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
-        call qr/URI::new$/' test.pl
 
-    # quantize transaction handling time both in total and grouped by request type
-    $ dip -e '
-        before { $ts_start = [gettimeofday] } call qr/MyApp::handle_request$/;
-        after { quantize [ "all", ARGS(1) ] => 10**6*tv_interval($ts_start) }
-            call qr/MyApp::handle_request$/;
-      ' myapp.pl
+    # run an inline dip script
+    $ dip -e 'before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
+        call "URI::new"' test.pl
+
+    # a more complex dip script
+    $ cat quant-requests.dip
+    # quantize request handling time, separated by request URI
+    before { $ts_start = [gettimeofday] }
+        call 'Dancer::Handler::handle_request';
+    after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
+        call qr/Dancer::Handler::handle_request/;
+    $ dip -s request-quant.dip test.pl
+    ...
+    /
+           value  ------------------ Distribution ------------------ count
+            1024 |                                                   0
+            2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@    95
+            4096 |@@                                                 4
+            8192 |                                                   0
+           16384 |@                                                  1
+           32768 |                                                   0
+
+    /login
+           value  ------------------ Distribution ------------------ count
+             512 |                                                   0
+            1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                70
+            2048 |@@@@@@@@@@@@@@@                                    30
+            4096 |                                                   0
+
+    # The next example relies on Aspect::Library::Profiler, so
+    # if something goes wrong, you need to look in the Aspect modules.
+    $ dip -e 'aspect Profiler => call qr/^Person::set_/' myapp.pl
+
+=head1 DESCRIPTION
+
+C<dip> is a dynamic instrumentation framework for troubleshooting Perl
+programs in real time. C<dip> can provide fine-grained information,
+such as a log of the arguments with which a specific function is being
+called.
+
+Please see the documentation of the L<dip> module for more information
+(C<perldoc dip>).
 
 =head1 COMMANDS
 
@@ -99,38 +126,20 @@ tells C<dip> to print that command-line.
 
 L<dip>
 
-=head1 INSTALLATION
-
-See perlmodinstall for information and options on installing Perl modules.
-
-=head1 BUGS AND LIMITATIONS
-
-No bugs have been reported.
-
-Please report any bugs or feature requests through the web interface at
-L<http://rt.cpan.org/Public/Dist/Display.html?Name=dip>.
-
-=head1 AVAILABILITY
-
-The latest version of this module is available from the Comprehensive Perl
-Archive Network (CPAN). Visit L<http://www.perl.com/CPAN/> to find a CPAN
-site near you, or see L<http://search.cpan.org/dist/dip/>.
-
-The development version lives at L<http://github.com/hanekomu/dip>
-and may be cloned from L<git://github.com/hanekomu/dip.git>.
-Instead of sending patches, please fork this project using the standard
-git and github infrastructure.
-
 =head1 AUTHOR
 
-Marcel Gruenauer <marcel@cpan.org>
+The following person is the author of all the files provided in
+this distribution unless explicitly noted otherwise.
+
+Marcel Gruenauer <marcel@cpan.org>, L<http://perlservices.at>
 
 =head1 COPYRIGHT AND LICENSE
+
+The following copyright notice applies to all the files provided in
+this distribution, including binary files, unless explicitly noted
+otherwise.
 
 This software is copyright (c) 2011 by Marcel Gruenauer.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
-
-=cut
-
