@@ -1,8 +1,8 @@
 # quantize request handling time
 my $ts_start;
 before { $ts_start = [gettimeofday] }
-    call qr/Dancer::Handler::handle_request/;
+    call 'Dancer::Handler::handle_request';
 after {
-    quantize [ 'all', ARGS(1)->method . ' ' . ARGS(1)->request_uri ] =>
+    quantize [ 'all', [ ARGS(1)->method,  ARGS(1)->request_uri ] ] =>
         10**6*tv_interval($ts_start)
-    } call qr/Dancer::Handler::handle_request/;
+    } call 'Dancer::Handler::handle_request';

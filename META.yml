@@ -26,4 +26,4 @@ requires:
   Term::ANSIColor: 0
   Time::HiRes: 0
   autodie: 0
-version: 1.14
+version: 1.15

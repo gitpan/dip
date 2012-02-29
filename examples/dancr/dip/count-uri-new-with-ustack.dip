@@ -1,0 +1,1 @@
+before { count("constructor", ustack(3)) } call 'URI::new'

@@ -2,6 +2,7 @@ bin/dip
 Changes
 examples/dancr/dancr.pl
 examples/dancr/dip/count-new.dip
+examples/dancr/dip/count-uri-new-with-ustack.dip
 examples/dancr/dip/dbi-prepare.dip
 examples/dancr/dip/dump-requests.dip
 examples/dancr/dip/request-quant.dip

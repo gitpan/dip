@@ -10,7 +10,7 @@ use File::Slurp qw(read_file);
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
 use Term::ANSIColor qw(:constants);
-our $VERSION = '1.14';
+our $VERSION = '1.15';
 our %opt;
 $dip::dip = sub { _instrument(); undef $dip::dip; };
 
@@ -134,7 +134,7 @@ sub rtrim {
 sub rref ($) { ref $_[0] || $_[0] }
 
 # In advice, $_->{args} contains a reference to the wrapped sub's @_.
-# Use this like ARGS(2,1) === $_->{args}[2] . " " . $_->{args}[1]
+# Use this like ARGS(2,1) === $_->{args}[2] . ' ' . $_->{args}[1]
 sub ARGS {
     return $_->{args}[ $_[0] ] if @_ == 1;
     join ' ' => (@{ $_->{args} })[@_];
@@ -146,6 +146,7 @@ sub quantize ($$) {
     my ($names, $value) = @_;
     $names = [$names] unless ref $names eq 'ARRAY';
     for my $name (@$names) {
+        $name = "@$name" if ref $name eq 'ARRAY';
         our %quantize;
         $quantize{$name} //= [];
         my $index = int(log($value) / log(2));
@@ -239,8 +240,9 @@ dip - Dynamic instrumentation like DTrace, using aspects
     $ dip -s toolkit/count-new.dip -- -S myapp.pl
 
     # run an inline dip script
-    $ dip -e 'our %c; before { count("constructor", ARGS(1), ustack(5)); $c{total}++ }
-        call "URI::new"' test.pl
+    $ dip -e 'our %c; before {
+        count("constructor", ARGS(1), ustack(5)); $c{total}++ } call "URI::new"'
+        test.pl
 
     # a more complex dip script
     $ cat quant-requests.dip
@@ -249,7 +251,7 @@ dip - Dynamic instrumentation like DTrace, using aspects
     before { $ts_start = [gettimeofday] }
         call 'Dancer::Handler::handle_request';
     after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
-        call qr/Dancer::Handler::handle_request/;
+        call 'Dancer::Handler::handle_request';
     $ dip -s request-quant.dip test.pl
     ...
     /
@@ -456,6 +458,15 @@ frequency distribution of the values of the specified expressions.
 Increments the value in the highest power-of-two bucket that is less
 than the specified expression.
 
+If a name is an array reference itself, the array elements are joined
+by single spaces. So you can write:
+
+    quantize [ 'all', [ ARGS(1)->method,  ARGS(1)->request_uri ] ] => ...
+
+Suppose C<ARGS(1)> is an HTTP requst, then this builds two
+distributions, one called C<all>, and another that consists of the
+method and URI of the request, for example C<GET /login>.
+
 =head2 gettimeofday
 
 The C<gettimeofday()> function from L<Time::HiRes> is available to dip
@@ -466,7 +477,7 @@ scripts.
 The C<tv_interval()> function from L<Time::HiRes> is available to dip
 scripts.
 
-=head Color constants
+=head2 Color constants
 
 Color constants from L<Term::ANSIColor> are available to dip scripts.
 For example:
