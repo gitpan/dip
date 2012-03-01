@@ -10,7 +10,7 @@ use File::Slurp qw(read_file);
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
 use Term::ANSIColor qw(:constants);
-our $VERSION = '1.15';
+our $VERSION = '1.16';
 our %opt;
 $dip::dip = sub { _instrument(); undef $dip::dip; };
 
@@ -246,15 +246,16 @@ dip - Dynamic instrumentation like DTrace, using aspects
 
     # a more complex dip script
     $ cat quant-requests.dip
-    # quantize request handling time, separated by request URI
-    my $ts_start;
-    before { $ts_start = [gettimeofday] }
-        call 'Dancer::Handler::handle_request';
-    after { quantize ARGS(1)->request_uri => 10**6*tv_interval($ts_start) }
-        call 'Dancer::Handler::handle_request';
+    # quantize request handling time, separated by request method/URI
+    around {
+        my $ts_start = [gettimeofday];
+        $_->proceed;
+        quantize [ 'all', [ ARGS(1)->method,  ARGS(1)->request_uri ] ] =>
+            10**6*tv_interval($ts_start);
+    } call 'Dancer::Handler::handle_request';
     $ dip -s request-quant.dip test.pl
     ...
-    /
+    GET /
            value  ------------------ Distribution ------------------ count
             1024 |                                                   0
             2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@    95
@@ -263,7 +264,7 @@ dip - Dynamic instrumentation like DTrace, using aspects
            16384 |@                                                  1
            32768 |                                                   0
 
-    /login
+    GET /login
            value  ------------------ Distribution ------------------ count
              512 |                                                   0
             1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                70

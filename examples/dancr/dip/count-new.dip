@@ -1,2 +1,7 @@
+# Count how many objects are created, grouped by package,
+# plus total
+
 our %c;
-before { count("constructor", rref ARGS(0)); $c{total}++ } call qr/::new$/
+before {
+    count('constructor', rref ARGS(0)); $c{total}++
+} call qr/::new$/

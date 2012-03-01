@@ -1,5 +1,8 @@
 Revision history for dip
 
+1.16 2012-03-01 15:18:27 Europe/Vienna
+    - better example dip scripts
+
 1.15 2012-02-29 23:18:12 Europe/Vienna
     - quantize(): can be given names that are array refs; they will be joined
       by single spaces to obtain the distribution name
