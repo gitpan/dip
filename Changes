@@ -1,5 +1,18 @@
 Revision history for dip
 
+1.16 2012-03-03 22:12:36 Europe/Vienna
+    - The --script and --exec options can be given several times and be
+      interleaved
+    - The --verbose option can be given several times
+    - Options can be passed to dip scripts using --define key=value
+    - The count-uri-new-with-ustack.dip example dip script demonstrates how to
+      use options passed to dip scripts
+    - The dip program now assembles the whole Instrumentation code and writes
+      it to a temporary file; when perl is called with "-Mdip", that file's
+      name is passed. This is much cleaner and safer than passing the whole
+      instrumentation code on the command-line.
+    - Better documentation
+
 1.16 2012-03-01 15:18:27 Europe/Vienna
     - better example dip scripts
 

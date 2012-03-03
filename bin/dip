@@ -1,20 +1,30 @@
 #!/usr/bin/env perl
-# PODNAME: dip
-# ABSTRACT: Dynamic instrumentation like DTrace, using aspects
 use warnings;
 use strict;
 use Getopt::Long;
-my %opt;
-GetOptions(\%opt, qw(script|s=s@ exec|e=s@ delay|d verbose|v));
-$opt{command} //= '';
-my $spec = '';
-$spec .= "run q!$_!; " for @{ $opt{script} || [] };
-$spec .= "$_; "        for @{ $opt{exec}   || [] };
+use File::Temp qw(tempfile);
+my $spec    = '';
+my $delay   = 0;
+my $verbose = 0;
+GetOptions(
+    'script|s=s@' => sub { $spec .= "run q!$_[1]!;\n" },
+    'exec|e=s@'   => sub { $spec .= "$_[1];\n" },
+    'define|f=s%' => sub { $spec  = "define q!$_[1]!, q!$_[2]!;\n$spec" },
+    'delay|d'     => sub { $delay = 1 },
+    'verbose|v'   => sub { $verbose++ }
+);
+$spec = "define 'verbose', $verbose;\n$spec";
+my ($fh, $filename) = tempfile();
+print $fh $spec;
+close $fh or die "can't close $filename: $!\n";
+my $arg = $filename;
 
-# horrible hack to pass some options to dip.pm during exec()
-$spec = "-delay,$spec" if $opt{delay};
-my $cmd = "$^X -Mdip='$spec' @ARGV";
-print "$cmd\n" if $opt{verbose};
+# Horrible hack to pass some options to dip.pm during exec(). 'delay'
+# is the one option that cannot be given in the dip script, since it
+# affects when the dip script is being evaluated.
+$arg = "-delay,$arg" if $delay;
+my $cmd = "$^X -Mdip='$arg' @ARGV";
+print "$cmd\n" if $verbose;
 exec $cmd;
 
 =pod
@@ -66,6 +76,12 @@ dip - Dynamic instrumentation like DTrace, using aspects
     # if something goes wrong, you need to look in the Aspect modules.
     $ dip -e 'aspect Profiler => call qr/^Person::set_/' myapp.pl
 
+=head1 NOTE
+
+This is the documentation for the C<dip> program. If you are looking
+for the documentation on the C<dip> module, use C<perldoc dip.pm> or
+C<man 3 dip>.
+
 =head1 DESCRIPTION
 
 C<dip> is a dynamic instrumentation framework for troubleshooting Perl
@@ -74,7 +90,7 @@ such as a log of the arguments with which a specific function is being
 called.
 
 Please see the documentation of the L<dip> module for more information
-(C<perldoc dip>).
+(C<perldoc dip.pm>).
 
 =head1 COMMANDS
 
@@ -82,7 +98,17 @@ Please see the documentation of the L<dip> module for more information
 
 =item -s, --script
 
-Takes a path to the dip script that should be run.
+Takes a path to the dip script that should be run. This and the
+C<--exec> option can be given several times and interleaved; they will
+be executed in the given order. For example:
+
+    dip -s foo.dip -e 'before { say "Hi" } call "Baz::new"' -s baz.dip
+
+will result in the following code:
+
+    run q!foo.dip!;
+    before { say "Hi" } call "Baz::new";
+    run q!baz.dip!;
 
 =item -e, --exec
 
@@ -116,9 +142,16 @@ uses Plack you might use:
 
 =item -v, --verbose
 
-The command-line options given to C<dip> are used to call the program
-to be instrumented in a special way. Using the C<--verbose> option
-tells C<dip> to print that command-line.
+This option can be given several times; it will be available to the
+instrumentation code as well. In verbose mode, C<dip> prints the
+command that is actually used to instrument the target program.
+
+=item -f, --define
+
+With this option you can pass values to the dip scripts. This option
+can be given several times and each time expects an argument of the
+form C<key=value>. In the instrumentation code, these options are
+available in C<%opt>.
 
 =back
 

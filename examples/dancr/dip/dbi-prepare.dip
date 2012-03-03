@@ -1,3 +1,4 @@
 # Show each SQL query as it is prepared
 
-before { say RED, ARGS(1), RESET } call qr/DBI::.*::prepare/
+before { say RED, ARGS(1), RESET }
+    call qr/DBI::.*::prepare/

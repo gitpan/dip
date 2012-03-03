@@ -2,5 +2,6 @@
 # Only tell me when they are created by Dancer code,
 # that is, not by the tests themselves.
 
-before { count('constructor', ustack(5)) }
+my $depth = $opt{depth} // 5;
+before { count constructor => ustack($depth) }
     call 'URI::new' & cflow qr/Dancer/;

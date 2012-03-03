@@ -10,20 +10,17 @@ use File::Slurp qw(read_file);
 use autodie;
 use Time::HiRes qw(gettimeofday tv_interval);  # so they're available to aspects
 use Term::ANSIColor qw(:constants);
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 our %opt;
 $dip::dip = sub { _instrument(); undef $dip::dip; };
 
 sub import {
     shift;
-
-    # perl -Mdip='before { count("constructor", $_->{sub_name}) }
-    # splits on ',' even inside a quoted string... :/
     while ($_[0] =~ /^-(\w+)$/) {
         $opt{$1}++;
         shift;
     }
-    our $advice = join ',' => @_;
+    our $advice = read_file($opt{_filename} = $_[0]);
     die "dip: no instrumentation found\n" unless length $advice;
 }
 
@@ -51,6 +48,10 @@ sub run {
     my $file = shift;
     $file =~ s!~/!$ENV{HOME}/!;
     _eval_code scalar read_file($file);
+}
+
+sub define ($$) {
+    $opt{ $_[0] } = $_[1];
 }
 
 sub ustack {
@@ -275,6 +276,12 @@ dip - Dynamic instrumentation like DTrace, using aspects
     # if something goes wrong, you need to look in the Aspect modules.
     $ dip -e 'aspect Profiler => call qr/^Person::set_/' myapp.pl
 
+=head1 NOTE
+
+This is the documentation for the C<dip> module. If you are looking
+for the documentation on the C<dip> program, use C<perldoc dip> or
+C<man 1 dip>.
+
 =head1 DESCRIPTION
 
 C<dip> is a dynamic instrumentation framework for troubleshooting Perl
@@ -364,13 +371,9 @@ example:
 
     dip -s myscript.dip myapp.pl
 
-is turned into:
+is more or less turned into:
 
     dip -e 'run q!$file!' myapp.pl
-
-and ultimately
-
-    perl -Mdip='run q!$file!' myapp.pl
 
 =head2 ustack
 
@@ -500,7 +503,33 @@ The following code is prepended to the code:
 
 so that dip scripts are properly checked and C<say()> is available.
 
-=head1 OTHER FUNCTIONS
+=head2 define
+
+This is a helper function used by the C<dip> program to pass options
+to dip scripts.
+
+=head1 PASSING OPTIONS TO DIP SCRIPTS
+
+When calling the C<dip> program, you can pass values to the
+instrumentation code using the C<--define> command-line option. This
+option can be given several times and each time expects an argument
+of the form C<key=value>. These arguments are available to the
+instrumentation code in C<%opt>.
+
+Example:
+
+    $ dip count-uri-new-with-ustack.dip --define depth=5
+
+Would work with this instrumentation code:
+
+    my $depth = $opt{depth} // 5;
+    before { count constructor => ustack($depth) }
+        call 'URI::new' & cflow qr/Dancer/;
+
+If the C<--verbose> option was given in the C<dip> program invocation,
+that option will be in C<%opt> as well.
+
+=head1 OTHER USEFUL FUNCTIONS
 
 dip scripts are just Perl code and as such can use any helper module.
 For example, you might use the following code at the beginning of your
@@ -520,6 +549,19 @@ Example:
     use DDP;
     before { print longmess(p $_->{args}[1]) if $_->{args}[1] }
         call "MyObj::name" & !cflow("MyObj::read")
+
+=head2 ONCE
+
+The C<ONCE()> function provided by L<once> can be used to run advice
+only the first time the relevant join point is encountered. For
+example:
+
+    # Print Dancer's route registry, but only once, since it's
+    # not going to change.
+    use once;
+    use DDP;
+    before { ONCE { p(Dancer::App->current->registry) } }
+        call "Dancer::Handler::handle_request"
 
 =head1 AUTHOR
 
